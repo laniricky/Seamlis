@@ -44,6 +44,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { AuthProvider } from "@/components/providers/AuthProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -52,7 +54,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${jakarta.variable} antialiased`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

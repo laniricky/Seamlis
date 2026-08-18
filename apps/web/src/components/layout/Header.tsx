@@ -8,16 +8,15 @@ import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { cn } from "@/lib/utils";
 
+import { useAuth } from "@/components/providers/AuthProvider";
+
 interface HeaderProps {
   onMenuClick?: () => void;
-  user?: {
-    displayName: string;
-    avatarUrl?: string | null;
-  } | null;
 }
 
-export function Header({ onMenuClick, user }: HeaderProps) {
+export function Header({ onMenuClick }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
 

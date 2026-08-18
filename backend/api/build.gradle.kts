@@ -46,6 +46,12 @@ dependencies {
     // Tests
     testImplementation("io.ktor:ktor-server-tests-jvm:2.3.8")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:1.9.22")
+
+    // Security
+    implementation("org.mindrot:jbcrypt:0.4")
+
+    // Exposed extras
+    implementation("org.jetbrains.exposed:exposed-java-time:0.47.0")
 }
 
 ktlint {

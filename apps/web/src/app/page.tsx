@@ -78,7 +78,7 @@ const CATEGORIES = ["All", "For You", "Tech", "Gaming", "Music", "Education", "L
 
 export default function HomePage() {
   return (
-    <AppShell user={null}>
+    <AppShell>
       {/* Category chips */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
         {CATEGORIES.map((cat, i) => (

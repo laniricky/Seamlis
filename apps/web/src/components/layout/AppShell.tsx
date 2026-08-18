@@ -7,10 +7,9 @@ import { cn } from "@/lib/utils";
 
 interface AppShellProps {
   children: React.ReactNode;
-  user?: { displayName: string; avatarUrl?: string | null } | null;
 }
 
-export function AppShell({ children, user }: AppShellProps) {
+export function AppShell({ children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -21,7 +20,6 @@ export function AppShell({ children, user }: AppShellProps) {
           // On mobile: toggle open; on desktop: toggle collapsed
           setSidebarOpen((o) => !o);
         }}
-        user={user}
       />
 
       <Sidebar isOpen={sidebarOpen} collapsed={sidebarCollapsed} />

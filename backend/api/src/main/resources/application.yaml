@@ -1,0 +1,17 @@
+ktor:
+  deployment:
+    port: 8080
+  application:
+    modules:
+      - com.seamlis.ApplicationKt.module
+
+db:
+  jdbcUrl: ${DB_JDBC_URL}
+  user: ${DB_USER}
+  password: ${DB_PASSWORD}
+  maxPoolSize: 10
+
+jwt:
+  secret: ${JWT_SECRET}
+  issuer: "http://0.0.0.0:8080/"
+  audience: "http://0.0.0.0:8080/seamlis"
