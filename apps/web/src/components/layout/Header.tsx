@@ -132,10 +132,9 @@ export function Header({ onMenuClick }: HeaderProps) {
         {user ? (
           <>
             {/* Upload */}
-            <Link href="/studio/upload">
-              <Button variant="ghost" size="icon" aria-label="Upload video" id="upload-btn">
-                <Upload className="w-5 h-5" />
-              </Button>
+            <Link href="/studio/upload" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-surface-card hover:bg-surface-elevated border border-border rounded-full transition-colors text-content-primary">
+              <Upload className="w-4 h-4 text-brand-primary" />
+              <span className="text-sm font-medium">Upload</span>
             </Link>
             {/* Notifications */}
             <button

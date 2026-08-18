@@ -134,3 +134,61 @@ Proceed to **Phase 2: Design System & UI Foundation** — implement Tailwind tok
 Proceed to **Phase 3: Authentication System** — login/register pages, JWT token handling, protected routes.
 
 ---
+
+## 2026-08-18T13:46:00+03:00 — Phase 3 Complete: Authentication System
+
+**Action:** Implemented the full backend API and frontend pages for Authentication.
+
+**Backend (Ktor):**
+- Configured HikariCP and Flyway for PostgreSQL database management.
+- Created `V1__create_users_table.sql` migration for the `users` table.
+- Created `Users.kt` (Exposed DSL) and `UserRepository.kt` implementation.
+- Built `AuthService.kt` to handle BCrypt password hashing, JWT access/refresh token issuance.
+- Configured the Ktor `Authentication` plugin with `JWT` validation.
+- Implemented `/register`, `/login`, `/refresh`, and `/me` routes in `AuthRoutes.kt`.
+- Updated `Application.kt` with `EngineMain`, `ContentNegotiation`, `CORS`, and loaded `application.yaml`.
+
+**Frontend (Next.js):**
+- Created `api.ts` utility for standardized backend fetching (with Auth header injection).
+- Created `AuthProvider.tsx` React Context to persist auth state (JWT in localStorage).
+- Built `/auth/login` and `/auth/register` pages using the Seamlis design components.
+- Updated `Header.tsx` and `AppShell.tsx` to display user Avatar or a "Sign in" button based on context.
+
+**Git:**
+- Commit: `f876c1f` — `feat: Phase 3 - Authentication System` (31 files, +1533 lines)
+- Status: ✅ Pushed to `main`
+
+**Verification:**
+- Next.js dev server running on port 3000.
+- Note: Docker desktop is currently inactive, so the backend database connection requires Docker to be started before testing locally.
+
+**Next Steps:**
+Proceed to **Phase 4: Video Upload Architecture & Infrastructure** — configure MinIO (S3), pre-signed URLs, upload processing logic.
+
+---
+
+## 2026-08-18T13:54:00+03:00 — Phase 4 Complete: Video Upload Architecture
+
+**Action:** Implemented MinIO S3 integration and the studio video upload page.
+
+**Backend (Ktor):**
+- Integrated `io.minio:minio` SDK for S3 operations.
+- Created `StorageService.kt` to auto-provision buckets and generate pre-signed upload URLs.
+- Added `Videos` table migration (`V2__create_videos_table.sql`) and `Videos.kt` Exposed mapping.
+- Created `VideoRepository.kt` and `Video.kt` domain models (with custom `UUIDSerializer`).
+- Implemented `/api/v1/videos/upload-url` endpoint for generating pre-signed PUT URLs.
+- Bound storage configuration to `application.yaml`.
+
+**Frontend (Next.js):**
+- Built the highly interactive `/studio/upload` page with drag-and-drop UI.
+- Implemented direct-to-S3 uploading via `XMLHttpRequest` to show real-time progress.
+- Added a new `Upload` link to the main `Header` UI leading to the studio.
+
+**Git:**
+- Commit: Pending push
+- Status: Compilation complete, formatting with ktlint.
+
+**Next Steps:**
+Proceed to **Phase 5: Video Processing Pipeline** — integrating FFmpeg to generate thumbnails, compress videos, and update database statuses via webhooks/polling.
+
+---

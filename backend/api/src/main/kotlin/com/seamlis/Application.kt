@@ -1,7 +1,10 @@
 package com.seamlis
 
 import com.seamlis.api.routes.authRoutes
+import com.seamlis.api.routes.processingRoutes
+import com.seamlis.api.routes.videoRoutes
 import com.seamlis.plugins.configureAuth
+import com.seamlis.service.ProcessingService
 import com.seamlis.service.getJwtConfig
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -44,6 +47,21 @@ fun Application.module() {
     val userRepository = com.seamlis.data.repository.UserRepositoryImpl()
     val authService = com.seamlis.service.AuthService(userRepository, jwtConfig)
 
+    val storageEndpoint = environment.config.property("storage.endpoint").getString()
+    val storageAccessKey = environment.config.property("storage.accessKey").getString()
+    val storageSecretKey = environment.config.property("storage.secretKey").getString()
+    val storageBucket = environment.config.property("storage.bucket").getString()
+
+    val storageService =
+        com.seamlis.service.StorageService(
+            endpoint = storageEndpoint,
+            accessKey = storageAccessKey,
+            secretKey = storageSecretKey,
+            bucketName = storageBucket,
+        )
+    val videoRepository = com.seamlis.data.repository.VideoRepositoryImpl()
+    val processingService = ProcessingService(videoRepository)
+
     // 4. Configure Routing
     routing {
         get("/") {
@@ -54,5 +72,7 @@ fun Application.module() {
         }
 
         authRoutes(authService)
+        videoRoutes(videoRepository, storageService)
+        processingRoutes(processingService)
     }
 }

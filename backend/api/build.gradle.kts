@@ -50,6 +50,9 @@ dependencies {
     // Security
     implementation("org.mindrot:jbcrypt:0.4")
 
+    // Storage
+    implementation("io.minio:minio:8.5.8")
+
     // Exposed extras
     implementation("org.jetbrains.exposed:exposed-java-time:0.47.0")
 }
