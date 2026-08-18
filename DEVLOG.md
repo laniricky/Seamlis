@@ -95,3 +95,42 @@ Awaiting user review and approval of the Phase 0 architectural foundation before
 Proceed to **Phase 2: Design System & UI Foundation** — implement Tailwind tokens, global CSS, core components, dark mode toggle.
 
 ---
+
+## 2026-08-18T13:29:45+03:00 — Phase 2 Complete: Design System & UI Foundation
+
+**Action:** Implemented the full Seamlis design system, core component library, and shell layout.
+
+**Files Created:**
+- `apps/web/tailwind.config.ts` — full Seamlis token palette (green brand, semantic CSS var mappings, animations, shadows)
+- `apps/web/src/app/globals.css` — CSS design tokens, dark/light mode, base styles, skeleton shimmer, glass utility
+- `apps/web/src/components/providers/ThemeProvider.tsx` — dark/light toggle with localStorage persistence, SSR flash-prevention
+- `apps/web/src/components/ui/Button.tsx` — 5 variants × 5 sizes, loading state, icons (CVA-powered)
+- `apps/web/src/components/ui/Input.tsx` — label, error, hint, left/right icon support
+- `apps/web/src/components/ui/Avatar.tsx` — image + initials fallback, 7 sizes, verified badge
+- `apps/web/src/components/ui/Badge.tsx` — 7 color variants, dot indicator
+- `apps/web/src/components/ui/Skeleton.tsx` — shimmer loader + VideoCardSkeleton / ChannelPageSkeleton presets
+- `apps/web/src/components/ui/VideoCard.tsx` — standard + compact variants, view count formatting, timeAgo
+- `apps/web/src/components/layout/Header.tsx` — logo, search bar, theme toggle, auth state, mobile responsive
+- `apps/web/src/components/layout/Sidebar.tsx` — main/library/creator nav sections, active state, collapse support
+- `apps/web/src/components/layout/AppShell.tsx` — full layout wrapper with responsive sidebar offset
+- `apps/web/src/lib/utils.ts` — cn() (clsx + tailwind-merge), formatBytes, clamp, sleep
+- `apps/web/src/app/page.tsx` — branded home feed: category chips + 6 video cards + 2 skeleton placeholders
+- `apps/web/next.config.mjs` — whitelisted external image hostnames for next/image
+
+**Packages Installed:** `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`
+
+**Issues Resolved:**
+- ThemeProvider SSR context error → added safe fallback in `useTheme()`
+- `VideoCardSkeleton` was in Skeleton.tsx not VideoCard.tsx → fixed import in page.tsx
+- `picsum.photos` blocked by next/image → added `remotePatterns` to next.config.mjs
+
+**Git:**
+- Commit: `68d4e14` — `feat: Phase 2 - Design System & UI Foundation` (19 files, +1518 lines)
+- Status: ✅ Pushed to `main`
+
+**Verification:** HTTP 200 confirmed at `localhost:3000`
+
+**Next Steps:**
+Proceed to **Phase 3: Authentication System** — login/register pages, JWT token handling, protected routes.
+
+---
