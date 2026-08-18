@@ -1,0 +1,337 @@
+# Seamlis — Security Architecture
+
+**Version:** 1.0  
+**Phase:** 0 — Architecture Foundation  
+**Date:** 2026-08-18  
+**Status:** Approved
+
+---
+
+## 1. Security Principles
+
+1. **Defense in depth** — Multiple security layers; no single point of failure
+2. **Least privilege** — Every system component gets only the access it needs
+3. **Security by default** — Insecure defaults are not allowed
+4. **Audit everything** — All privileged actions logged with context
+5. **Fail securely** — On error, deny access rather than grant it
+6. **No secrets in code** — All credentials from environment variables only
+
+---
+
+## 2. Authentication Security
+
+### 2.1 Password Security
+
+See [Authentication Architecture](./07-authentication-architecture.md) for full detail.
+
+| Control | Implementation |
+|---------|---------------|
+| Hashing | Argon2id (64 MB memory, 3 iterations, 4 parallelism) |
+| Brute force | 5 attempts/min/IP, then exponential lockout |
+| Enumeration | Identical response for "user not found" and "wrong password" |
+| Reset | Token via email, 1-hour TTL, single use |
+| Common passwords | Blocked against top-10k list |
+
+### 2.2 Session Security
+
+| Control | Implementation |
+|---------|---------------|
+| Access token storage | Memory only (never localStorage) |
+| Refresh token storage | HttpOnly, Secure, SameSite=Strict cookie |
+| Session invalidation | Instant via Redis deletion |
+| Concurrent sessions | Max 10 per user |
+| Token rotation | Every refresh generates a new refresh token |
+
+### 2.3 JWT Security
+
+| Control | Value |
+|---------|-------|
+| Algorithm | HS256 (RS256 in Phase 1 if load balancer config allows) |
+| Secret | 256-bit random, from environment variable |
+| Access token TTL | 15 minutes |
+| Expiry check | Strict (reject tokens even 1 second expired) |
+| Audience claim | `seamlis-api` |
+| Issuer claim | `seamlis.com` |
+
+---
+
+## 3. API Security
+
+### 3.1 Rate Limiting
+
+All endpoints rate-limited. See [API Architecture §4](./05-api-architecture.md) for tiers.
+
+**Implementation:**
+- Sliding window counter in Redis
+- Key: `ratelimit:{fingerprint}:{endpoint_group}:{window}`
+- Fingerprint: User ID if authenticated, hashed IP + User-Agent if anonymous
+- 429 response includes `Retry-After` header
+
+### 3.2 Input Validation
+
+**Rule:** All input validated at the API layer before it reaches business logic.
+
+```kotlin
+// Schema validation example
+data class RegisterRequest(
+    @field:Email val email: String,
+    @field:Size(min = 8, max = 128) val password: String,
+    @field:Size(min = 1, max = 100) val displayName: String
+)
+
+// In Ktor route:
+val body = call.receive<RegisterRequest>()
+validate(body)  // Throws ValidationException → 422 response
+```
+
+**Rules:**
+- Max request body size: 10 KB (normal endpoints), 1 MB (profile/channel updates)
+- SQL injection: Prevented via parameterized queries (Exposed ORM) — no string concatenation
+- All string fields have max length enforced at DB and API level
+- No HTML allowed in user-generated text fields (sanitized on read for display)
+
+### 3.3 CORS
+
+```kotlin
+install(CORS) {
+    allowHost("seamlis.com", schemes = listOf("https"))
+    allowHost("www.seamlis.com", schemes = listOf("https"))
+    if (env == "development") allowHost("localhost:3000")
+    allowCredentials = true  // Required for cookies
+    allowHeaders = listOf("Authorization", "Content-Type")
+    allowMethods = listOf(HttpMethod.Get, HttpMethod.Post, HttpMethod.Put, HttpMethod.Delete)
+}
+```
+
+### 3.4 CSRF Protection
+
+- **API-level:** CSRF not needed because:
+  - API uses `Authorization: Bearer` header (not cookies for auth)
+  - Refresh token cookie is `SameSite=Strict` + HttpOnly
+  - CORS restricts cross-origin API calls
+- **State-changing cookie operations:** Double-submit cookie pattern as additional protection where needed
+
+### 3.5 HTTPS & Headers
+
+```kotlin
+// Security headers on all responses
+call.response.headers.apply {
+    append("X-Content-Type-Options", "nosniff")
+    append("X-Frame-Options", "DENY")
+    append("X-XSS-Protection", "0")  // CSP is better
+    append("Referrer-Policy", "strict-origin-when-cross-origin")
+    append("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    append(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' cdn.seamlis.com data:; media-src cdn.seamlis.com; connect-src 'self' api.seamlis.com"
+    )
+    append("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+}
+```
+
+---
+
+## 4. File Upload Security
+
+### 4.1 Video Upload
+
+| Check | Implementation |
+|-------|---------------|
+| File size limit | 128 GB maximum per upload |
+| Allowed MIME types | `video/mp4`, `video/quicktime`, `video/webm` only |
+| MIME spoofing | Magic byte validation in processing worker (FFprobe) |
+| Malware scanning | ClamAV integration on processing worker (Phase 5+) |
+| Path traversal | S3 keys generated by server (UUID-based), never from user input |
+| Storage isolation | Raw uploads in private bucket; processed in CDN bucket |
+| Filename sanitization | Original filename stored as metadata only; never used as storage key |
+
+### 4.2 Image Upload (avatars, banners, thumbnails)
+
+| Check | Implementation |
+|-------|---------------|
+| Max file size | 10 MB |
+| Allowed types | JPEG, PNG, WebP only |
+| Dimension limits | Max 4096×4096 |
+| Re-encoding | All images re-encoded server-side (strips EXIF, potential exploits) |
+| SVG | Never allowed (XSS vector) |
+
+---
+
+## 5. Authorization (IDOR Prevention)
+
+**IDOR (Insecure Direct Object Reference)** attacks occur when a user can access another user's resources by guessing IDs.
+
+**Prevention strategy:**
+1. All IDs are UUID v4/v7 (not sequential integers)
+2. Every sensitive query includes `AND owner_id = :currentUserId`
+3. Resource ownership verified in service layer, not just route middleware
+4. Admin bypass is explicit and audited
+
+```kotlin
+// Example: Get video for editing
+suspend fun getVideoForEditing(videoId: UUID, currentUserId: UUID): Video {
+    val video = videoRepository.findById(videoId)
+        ?: throw NotFoundException("VIDEO_NOT_FOUND")
+    
+    val channel = channelRepository.findById(video.channelId)
+        ?: throw NotFoundException("CHANNEL_NOT_FOUND")
+    
+    if (channel.userId != currentUserId) {
+        throw ForbiddenException("FORBIDDEN")
+    }
+    
+    return video
+}
+```
+
+---
+
+## 6. Server-Side Request Forgery (SSRF) Prevention
+
+The platform handles user-supplied URLs in limited cases (channel social links, community post links).
+
+**Controls:**
+- Validate URLs are HTTP/HTTPS only
+- Block private IP ranges: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `127.0.0.0/8`, `169.254.0.0/16`
+- No server-side fetching of user-supplied media URLs (all media uploaded directly)
+- DNS rebinding prevention: resolve URL, re-validate IP after DNS resolution
+
+---
+
+## 7. SQL Injection Prevention
+
+**Primary defense:** JetBrains Exposed ORM — parameterized queries by default  
+**Rule:** Never concatenate user input into SQL strings
+
+```kotlin
+// SAFE — parameterized
+Videos.select { Videos.channelId eq channelId }
+
+// NEVER DO THIS
+transaction { exec("SELECT * FROM videos WHERE channel_id = '$channelId'") }
+```
+
+---
+
+## 8. XSS Prevention
+
+| Context | Prevention |
+|---------|-----------|
+| React/Next.js rendering | Auto-escaped by default |
+| Dangerously set HTML | Never used; all rich text uses safe sanitizer (DOMPurify) |
+| User-generated content display | Strip all HTML on write; render as text |
+| Video embeds | Allowlist of known safe hosts only |
+| CSP header | Restricts inline scripts |
+
+---
+
+## 9. Secrets Management
+
+**Rule:** No secrets in source code, ever.
+
+**Development:**
+```
+.env.local (gitignored)
+DATABASE_URL=postgresql://...
+REDIS_URL=redis://...
+JWT_SECRET=...
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+```
+
+**Production:**
+- Secrets stored in cloud provider secret manager (AWS Secrets Manager, GCP Secret Manager)
+- Injected as environment variables at runtime by deployment system
+- Rotate secrets on schedule (JWT secret: every 90 days)
+- No secrets in Docker images, CI/CD logs, or error messages
+
+**`.gitignore` must include:**
+```
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+```
+
+---
+
+## 10. Abuse Prevention
+
+### 10.1 View Count Integrity
+
+**Problem:** Prevent page-refresh view inflation.
+
+**Solution:**
+```
+First view event → Check Redis: view:{userId|ip}:{videoId}:TTL(24h)
+If key exists → reject (already counted this session)
+If key absent → set key, add to view buffer
+View buffer → flushed to DB every 60 seconds
+```
+
+Minimum watch time before counting: 30 seconds (configurable).
+
+### 10.2 Comment Spam
+
+- Rate limit: 30 comments per hour per user
+- Spam score via content analysis (link density, repeated text)
+- Auto-hold comments with high spam score for review
+
+### 10.3 Account Takeover Detection
+
+- Alert on login from new country/device
+- Force re-auth for sensitive actions (password change, payout setup)
+- Suspicious activity → account review flag
+
+---
+
+## 11. Audit Logging
+
+All privileged actions logged to `audit_logs` table:
+
+```sql
+CREATE TABLE audit_logs (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    actor_id    UUID REFERENCES users(id),
+    action      VARCHAR(100) NOT NULL,
+    target_type VARCHAR(50),
+    target_id   UUID,
+    metadata    JSONB,
+    ip_address  INET,
+    user_agent  TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+**Logged events:**
+- Login, logout, failed login
+- Password change, email change
+- Role change (admin)
+- Account suspension/ban
+- Video deletion by admin
+- Moderation action
+- Payout approval/rejection
+- Admin config change
+
+**Audit logs:** Never deleted, never modified, append-only.
+
+---
+
+## 12. Security Testing Requirements
+
+| Category | Tool | Phase |
+|----------|------|-------|
+| Dependency vulnerabilities | `npm audit`, `gradle dependencyCheck` | CI/CD |
+| SAST | SonarQube or similar | Phase 26 |
+| DAST | OWASP ZAP | Phase 26 |
+| Penetration test | Manual (Phase 26) | Phase 26 |
+| Auth flow review | Manual checklist | Phase 3 |
+| Upload flow review | Manual checklist | Phase 5 |
+| Payment flow review | Manual checklist | Phase 17 |
+
+---
+
+*Document prepared as part of Phase 0 — Architecture Foundation*  
+*Previous: [Design System Specification ←](./09-design-system-specification.md) | Next: [Deployment Architecture →](./11-deployment-architecture.md)*
