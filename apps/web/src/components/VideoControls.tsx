@@ -19,6 +19,7 @@ interface VideoControlsProps {
   volume: number;
   isMuted: boolean;
   isFullscreen: boolean;
+  isLive?: boolean;
   levels: Level[];
   currentLevel: number;
   onPlayPause: () => void;
@@ -54,7 +55,7 @@ function getQualityLabel(level: Level): string {
 
 export default function VideoControls({
   isPlaying, currentTime, duration, volume, isMuted,
-  isFullscreen, levels, currentLevel,
+  isFullscreen, isLive = false, levels, currentLevel,
   onPlayPause, onSeek, onVolumeChange, onToggleMute,
   onToggleFullscreen, onQualityChange
 }: VideoControlsProps) {
@@ -79,46 +80,48 @@ export default function VideoControls({
 
   return (
     <div className="select-none">
-      {/* Progress Bar */}
-      <div
-        className="relative h-1 w-full rounded-full bg-white/25 cursor-pointer group/progress mb-3"
-        onClick={handleProgressClick}
-        onMouseMove={handleProgressHover}
-        onMouseLeave={() => setHoverTime(null)}
-      >
-        {/* Hover time tooltip */}
-        {hoverTime !== null && (
-          <div
-            className="absolute -top-7 transform -translate-x-1/2 bg-black/90 text-white text-xs px-2 py-0.5 rounded pointer-events-none whitespace-nowrap"
-            style={{ left: hoverX }}
-          >
-            {formatTime(hoverTime)}
-          </div>
-        )}
-
-        {/* Buffered track */}
-        <div className="absolute inset-0 rounded-full bg-white/20" />
-
-        {/* Played track */}
+      {/* Progress Bar (hide if live) */}
+      {!isLive && (
         <div
-          className="absolute inset-y-0 left-0 rounded-full bg-brand-500 transition-all duration-75"
-          style={{ width: `${progress}%` }}
-        />
+          className="relative h-1 w-full rounded-full bg-white/25 cursor-pointer group/progress mb-3"
+          onClick={handleProgressClick}
+          onMouseMove={handleProgressHover}
+          onMouseLeave={() => setHoverTime(null)}
+        >
+          {/* Hover time tooltip */}
+          {hoverTime !== null && (
+            <div
+              className="absolute -top-7 transform -translate-x-1/2 bg-black/90 text-white text-xs px-2 py-0.5 rounded pointer-events-none whitespace-nowrap"
+              style={{ left: hoverX }}
+            >
+              {formatTime(hoverTime)}
+            </div>
+          )}
 
-        {/* Thumb */}
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-md opacity-0 group-hover/progress:opacity-100 transition-opacity"
-          style={{ left: `calc(${progress}% - 6px)` }}
-        />
+          {/* Buffered track */}
+          <div className="absolute inset-0 rounded-full bg-white/20" />
 
-        {/* Hover indicator */}
-        {hoverTime !== null && (
+          {/* Played track */}
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-white/40 transition-all duration-75"
-            style={{ width: `${(hoverTime / duration) * 100}%` }}
+            className="absolute h-full rounded-full bg-brand-500"
+            style={{ width: `${progress}%` }}
           />
-        )}
-      </div>
+
+          {/* Scrubber thumb */}
+          <div
+            className="absolute top-1/2 -mt-1.5 h-3 w-3 rounded-full bg-white opacity-0 group-hover/progress:opacity-100 transition-opacity"
+            style={{ left: `calc(${progress}% - 6px)` }}
+          />
+
+          {/* Hover indicator */}
+          {hoverTime !== null && (
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-white/40 transition-all duration-75"
+              style={{ width: `${(hoverTime / duration) * 100}%` }}
+            />
+          )}
+        </div>
+      )}
 
       {/* Control Row */}
       <div className="flex items-center justify-between gap-2">
@@ -163,12 +166,19 @@ export default function VideoControls({
             </div>
           </div>
 
-          {/* Time Display */}
-          <span className="text-white text-sm font-mono tabular-nums">
-            {formatTime(currentTime)}
-            <span className="text-white/50 mx-1">/</span>
-            {formatTime(duration)}
-          </span>
+          {/* Time display */}
+          <div className="text-white text-sm font-medium ml-4 hidden sm:block">
+            {isLive ? (
+              <span className="flex items-center text-red-500 font-bold tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse"></span>
+                LIVE
+              </span>
+            ) : (
+              <>
+                {formatTime(currentTime)} <span className="text-white/60 mx-1">/</span> {formatTime(duration)}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Right Group */}

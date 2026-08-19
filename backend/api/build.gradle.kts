@@ -33,6 +33,7 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jwt-jvm:2.3.8")
     implementation("io.ktor:ktor-server-cors-jvm:2.3.8")
     implementation("io.ktor:ktor-server-call-logging-jvm:2.3.8")
+    implementation("io.ktor:ktor-server-websockets-jvm:2.3.8")
     implementation("ch.qos.logback:logback-classic:1.4.14")
 
     // Database
@@ -59,6 +60,7 @@ dependencies {
 
     // Queue / Async
     implementation("io.lettuce:lettuce-core:6.3.1.RELEASE")
+    implementation("redis.clients:jedis:5.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 }
 

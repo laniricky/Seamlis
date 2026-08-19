@@ -23,10 +23,10 @@ interface VideoPlayerProps {
   title?: string;
   videoId?: string;
   className?: string;
+  isLive?: boolean;
 }
 
-
-export default function VideoPlayer({ src, poster, title, videoId, className }: VideoPlayerProps) {
+export default function VideoPlayer({ src, poster, title, videoId, className, isLive = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -368,6 +368,7 @@ export default function VideoPlayer({ src, poster, title, videoId, className }: 
           volume={volume}
           isMuted={isMuted}
           isFullscreen={isFullscreen}
+          isLive={isLive}
           levels={levels}
           currentLevel={currentLevel}
           onPlayPause={togglePlay}

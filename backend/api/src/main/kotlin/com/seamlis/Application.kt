@@ -9,6 +9,7 @@ import com.seamlis.api.routes.communityRoutes
 import com.seamlis.api.routes.authRoutes
 import com.seamlis.api.routes.processingRoutes
 import com.seamlis.api.routes.videoRoutes
+import com.seamlis.api.routes.liveRoutes
 import com.seamlis.service.AnalyticsService
 import com.seamlis.service.SearchService
 import com.seamlis.service.StudioService
@@ -31,6 +32,8 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
+import java.time.Duration
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -60,6 +63,13 @@ fun Application.module() {
         allowHeader(io.ktor.http.HttpHeaders.Authorization)
         allowHeader(io.ktor.http.HttpHeaders.ContentType)
         anyHost() // In production, restrict this
+    }
+
+    install(WebSockets) {
+        pingPeriod = Duration.ofSeconds(15)
+        timeout = Duration.ofSeconds(15)
+        maxFrameSize = Long.MAX_VALUE
+        masking = false
     }
 
     // 3. Setup Dependencies
@@ -92,6 +102,7 @@ fun Application.module() {
     val redisUrl = System.getenv("REDIS_URL") ?: "redis://localhost:6379"
 
     val processingService = ProcessingService(videoRepository, null)
+    val liveService = com.seamlis.service.LiveService(redisUrl)
 
     // Start Redis and background worker asynchronously so they don't block server startup
     val appScope = CoroutineScope(Dispatchers.IO)
@@ -131,5 +142,6 @@ fun Application.module() {
         recommendationRoutes(recommendationService)
         notificationRoutes(notificationService)
         communityRoutes(communityService)
+        liveRoutes(liveService)
     }
 }

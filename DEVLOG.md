@@ -316,3 +316,29 @@ Proceed to **Phase 15: Communities** — a dedicated feed for text, images, and 
 
 **Next Steps:**
 Proceed to **Phase 16: Livestreaming** — architectural design for RTMP ingest and chat.
+
+---
+
+## 2026-08-19T12:47:00+03:00 — Phase 16 Complete: Livestreaming
+
+**Action:** Built the livestreaming infrastructure allowing creators to broadcast via RTMP, and viewers to watch via HLS with real-time WebSocket chat.
+
+**Infrastructure:**
+- Added `nginx-rtmp` container to `docker-compose.yml` on port 1935 for ingest and 8088 for HTTP HLS delivery.
+- Created custom `nginx.conf` designed for RTMP stream key authentication and low-latency HLS generation.
+
+**Backend (Ktor):**
+- Migrated database schema: `V10__create_livestreams_tables.sql`.
+- Added WebSockets and Jedis dependencies to Ktor.
+- Created `LiveService.kt` to handle stream CRUD operations and active WebSocket connections.
+- Implemented Redis Pub/Sub (`JedisPubSub`) in `LiveService.kt` to allow chat messages to broadcast across horizontally scaled Ktor nodes.
+- Created `LiveRoutes.kt` for RTMP webhooks (`/webhook/publish`, `/webhook/done`), public stream info, and the `/chat` WebSocket endpoint.
+
+**Frontend (Next.js):**
+- Built `/studio/live/page.tsx` for creators to generate stream keys and monitor their live status.
+- Built `/live/[id]/page.tsx` for viewers to watch the HLS stream.
+- Updated `VideoPlayer.tsx` and `VideoControls.tsx` to handle an `isLive` prop, hiding the scrubbing progress bar and displaying a LIVE badge.
+- Built `LiveChat.tsx` utilizing native WebSockets to connect to the Ktor backend and render chat messages in real time.
+
+**Next Steps:**
+Proceed to **Phase 17: Video Editor & Shorts Engine** — implement in-browser trimming and clipping tools for converting long-form VODs into Shorts.
