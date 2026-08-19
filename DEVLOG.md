@@ -370,6 +370,7 @@ Proceed to **Phase 18: Moderation & Trust/Safety** — build the reporting workf
 
 **Action:** Built the moderation system allowing users to report content and admins to review and take action.
 
+
 **Backend (Ktor):**
 - Added `role` and `is_active` to the `users` table via `V12` migration.
 - Created `reports` table to track content reports, their status, and the admin who resolved them.
