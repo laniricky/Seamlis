@@ -9,10 +9,11 @@ import { Badge } from '@/components/ui/Badge';
 import VideoPlayer from '@/components/VideoPlayer';
 import CommentsSection from '@/components/CommentsSection';
 import { TipButton } from '@/components/monetization/TipButton';
+import { ReportModal } from '@/components/shared/ReportModal';
 import { fetchApi } from '@/lib/api';
 import {
   ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal,
-  Bell, Loader2, CheckCircle2,
+  Bell, Loader2, CheckCircle2, Flag,
 } from 'lucide-react';
 
 const MINIO_BASE = 'http://localhost:9000/seamlis-videos';
@@ -52,6 +53,7 @@ export default function WatchPage() {
   const [liking, setLiking] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
 
   useEffect(() => {
@@ -293,6 +295,14 @@ export default function WatchPage() {
                 </button>
 
                 <button
+                  onClick={() => setShowReportModal(true)}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-surface-card border border-border hover:bg-surface-elevated text-content-secondary hover:text-content-primary transition-colors"
+                  title="Report Video"
+                >
+                  <Flag className="w-4 h-4" />
+                </button>
+
+                <button
                   className="p-2 bg-surface-card hover:bg-surface-elevated border border-border rounded-full text-content-secondary hover:text-content-primary transition-colors"
                   id="more-btn"
                 >
@@ -366,6 +376,13 @@ export default function WatchPage() {
           </aside>
         </div>
       </div>
+      {showReportModal && (
+        <ReportModal
+          targetType="VIDEO"
+          targetId={video.id}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
     </AppShell>
   );
 }

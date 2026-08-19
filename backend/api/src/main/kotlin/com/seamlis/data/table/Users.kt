@@ -11,6 +11,8 @@ object Users : UUIDTable("users") {
     val avatarUrl = varchar("avatar_url", 512).nullable()
     val bio = text("bio").nullable()
     val isVerified = bool("is_verified").default(false)
+    val role = varchar("role", 20).default("USER")
+    val isActive = bool("is_active").default(true)
     val refreshTokenHash = varchar("refresh_token_hash", 255).nullable()
     val createdAt = timestamp("created_at")
     val updatedAt = timestamp("updated_at")

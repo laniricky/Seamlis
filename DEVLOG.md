@@ -363,3 +363,24 @@ Proceed to **Phase 17: Video Editor & Shorts Engine** — implement in-browser t
 
 **Next Steps:**
 Proceed to **Phase 18: Moderation & Trust/Safety** — build the reporting workflow, review queue, and moderation dashboard.
+
+---
+
+## 2026-08-19T17:15:00+03:00 — Phase 18 Complete: Moderation & Trust/Safety
+
+**Action:** Built the moderation system allowing users to report content and admins to review and take action.
+
+**Backend (Ktor):**
+- Added `role` and `is_active` to the `users` table via `V12` migration.
+- Created `reports` table to track content reports, their status, and the admin who resolved them.
+- Built `ModerationService.kt` to handle report creation and resolution (Dismiss, Delete Content, Ban User).
+- Exposed `ModerationRoutes.kt` with a public reporting endpoint and protected admin endpoints that verify `Users.role == "ADMIN"`.
+
+**Frontend (Next.js):**
+- Built `ReportModal.tsx`, a reusable component allowing users to report Videos, Comments, or Channels with predefined reasons.
+- Integrated the `ReportModal` into the video watch page next to the Like/Share buttons.
+- Created an Admin Console layout (`/admin/layout.tsx`) separate from the Creator Studio.
+- Built the Review Queue (`/admin/moderation/page.tsx`) where admins can view pending reports, see the content in question, and execute quick actions (Dismiss, Delete, Ban).
+
+**Next Steps:**
+Proceed to **Phase 19: Notifications System** — build the unified notification feed for likes, comments, and subscriptions.

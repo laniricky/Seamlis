@@ -11,6 +11,7 @@ import com.seamlis.api.routes.processingRoutes
 import com.seamlis.api.routes.videoRoutes
 import com.seamlis.api.routes.liveRoutes
 import com.seamlis.api.routes.monetizationRoutes
+import com.seamlis.api.routes.moderationRoutes
 import com.seamlis.service.AnalyticsService
 import com.seamlis.service.SearchService
 import com.seamlis.service.StudioService
@@ -19,6 +20,7 @@ import com.seamlis.service.NotificationService
 import com.seamlis.service.CommunityService
 import com.seamlis.service.EngagementService
 import com.seamlis.service.MonetizationService
+import com.seamlis.service.ModerationService
 import com.seamlis.plugins.configureAuth
 import com.seamlis.service.FFmpegService
 import com.seamlis.service.ProcessingService
@@ -106,6 +108,7 @@ fun Application.module() {
     val processingService = ProcessingService(videoRepository, null)
     val liveService = com.seamlis.service.LiveService(redisUrl)
     val monetizationService = MonetizationService()
+    val moderationService = ModerationService()
 
     // Start Redis and background worker asynchronously so they don't block server startup
     val appScope = CoroutineScope(Dispatchers.IO)
@@ -147,5 +150,6 @@ fun Application.module() {
         communityRoutes(communityService)
         liveRoutes(liveService)
         monetizationRoutes(monetizationService)
+        moderationRoutes(moderationService)
     }
 }
