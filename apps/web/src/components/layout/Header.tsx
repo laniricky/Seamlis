@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Bell, Upload, Menu, Sun, Moon, X } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Search, Upload, Menu, Sun, Moon, X, Clock } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/components/providers/ThemeProvider";
@@ -17,8 +19,43 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("seamlis-search-history");
+    if (saved) {
+      try { setHistory(JSON.parse(saved)); } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowHistory(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSearch = (searchQuery: string) => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    
+    // Save to history
+    const newHistory = [q, ...history.filter(h => h !== q)].slice(0, 10);
+    setHistory(newHistory);
+    localStorage.setItem("seamlis-search-history", JSON.stringify(newHistory));
+    
+    setShowHistory(false);
+    setSearchOpen(false);
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+  };
 
   return (
     <header
@@ -52,10 +89,11 @@ export function Header({ onMenuClick }: HeaderProps) {
         </Link>
       </div>
 
-      {/* Center — Search bar (hidden on mobile when closed) */}
+      {/* Center — Search bar */}
       <div
+        ref={searchRef}
         className={cn(
-          "flex-1 max-w-xl transition-all duration-normal",
+          "flex-1 max-w-xl transition-all duration-normal relative",
           searchOpen ? "flex" : "hidden sm:flex"
         )}
       >
@@ -69,24 +107,26 @@ export function Header({ onMenuClick }: HeaderProps) {
           </button>
         )}
         <form
-          className="flex w-full"
-          onSubmit={(e) => { e.preventDefault(); /* TODO: route to /search */ }}
+          className="flex w-full relative z-10"
+          onSubmit={(e) => { e.preventDefault(); handleSearch(query); }}
           role="search"
         >
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setShowHistory(true)}
             placeholder="Search videos, channels..."
             className={cn(
               "flex-1 h-9 bg-surface-elevated text-content-primary text-sm",
               "border border-border rounded-l-full px-4",
               "placeholder:text-content-muted",
-              "focus:outline-none focus:border-border-focus",
-              "transition-colors duration-normal"
+              "focus:outline-none focus:border-border-focus focus:bg-surface-base focus:shadow-inner",
+              "transition-all duration-normal"
             )}
             aria-label="Search"
             id="header-search-input"
+            autoComplete="off"
           />
           <button
             type="submit"
@@ -101,6 +141,26 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Search className="w-4 h-4" />
           </button>
         </form>
+
+        {/* History Dropdown */}
+        {showHistory && history.length > 0 && (
+          <div className="absolute top-full left-0 right-12 mt-1 bg-surface-card border border-border rounded-xl shadow-xl py-2 z-50">
+            {history.map((item, i) => (
+              <button
+                key={i}
+                type="button"
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-content-primary hover:bg-surface-elevated transition-colors text-left font-medium"
+                onClick={() => {
+                  setQuery(item);
+                  handleSearch(item);
+                }}
+              >
+                <Clock className="w-4 h-4 text-content-tertiary" />
+                {item}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Right — Actions */}
@@ -137,15 +197,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               <span className="text-sm font-medium">Upload</span>
             </Link>
             {/* Notifications */}
-            <button
-              className="relative p-2 rounded-md text-content-secondary hover:bg-surface-elevated hover:text-content-primary transition-colors"
-              aria-label="Notifications"
-              id="notifications-btn"
-            >
-              <Bell className="w-5 h-5" />
-              {/* Unread dot */}
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-status-error rounded-full" />
-            </button>
+            <NotificationBell />
             {/* Avatar */}
             <button className="ml-1" aria-label="Account" id="account-btn">
               <Avatar src={user.avatarUrl} alt={user.displayName} size="sm" />

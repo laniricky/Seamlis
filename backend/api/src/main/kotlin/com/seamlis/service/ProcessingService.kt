@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -23,13 +24,19 @@ data class ProcessingWebhookPayload(
 
 class ProcessingService(
     private val videoRepository: VideoRepository,
+    private var redisJobQueue: RedisJobQueue?,
 ) {
+    fun setQueue(queue: RedisJobQueue) {
+        this.redisJobQueue = queue
+    }
     /**
      * Called when the backend receives an upload-complete notification from the client.
      * Creates a processing job record and marks the video as PROCESSING.
      */
-    fun enqueueProcessing(videoId: UUID): UUID {
-        return transaction {
+    suspend fun enqueueProcessing(videoId: UUID): UUID {
+        val video = videoRepository.getVideo(videoId) ?: throw Exception("Video not found")
+
+        val jobIdValue = transaction {
             // Mark video as PROCESSING
             Videos.update({ Videos.id eq videoId }) {
                 it[status] = "PROCESSING"
@@ -47,6 +54,19 @@ class ProcessingService(
 
             jobId.value
         }
+
+        val queue = redisJobQueue ?: throw Exception("Redis queue not initialized yet")
+        queue.enqueue(
+            QUEUE_VIDEO_PROCESSING,
+            VideoProcessingJob(
+                jobId = jobIdValue.toString(),
+                videoId = videoId.toString(),
+                rawStorageKey = video.originalVideoKey ?: throw Exception("Missing original video key"),
+                requestedAt = Instant.now().toString(),
+            )
+        )
+
+        return jobIdValue
     }
 
     /**

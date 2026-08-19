@@ -4,8 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { useAuth } from "@/components/providers/AuthProvider";
+import { useAuth, User, AuthTokens } from "@/components/providers/AuthProvider";
 import { fetchApi } from "@/lib/api";
+
+interface RegisterResponse {
+  tokens: AuthTokens;
+  user: User;
+}
 
 export function RegisterForm() {
   const router = useRouter();
@@ -25,15 +30,19 @@ export function RegisterForm() {
     setLoading(true);
 
     try {
-      const data = await fetchApi<any>("/auth/register", {
+      const data = await fetchApi<RegisterResponse>("/auth/register", {
         method: "POST",
         body: JSON.stringify({ email, username, displayName, password }),
       });
       login(data.tokens, data.user);
       router.push("/");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Failed to create account");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -89,7 +98,7 @@ export function RegisterForm() {
         minLength={8}
       />
 
-      <Button type="submit" variant="primary" className="mt-2" isLoading={loading}>
+      <Button type="submit" variant="primary" className="mt-2" loading={loading}>
         Create account
       </Button>
     </form>

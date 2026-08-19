@@ -14,6 +14,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "**.seamlis.com",
       },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9000",
+      },
     ],
   },
 };

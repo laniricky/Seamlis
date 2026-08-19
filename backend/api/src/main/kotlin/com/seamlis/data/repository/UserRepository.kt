@@ -28,12 +28,13 @@ interface UserRepository {
 
     fun existsByUsername(username: String): Boolean
 
-    fun updateRefreshTokenHash(
-        userId: String,
-        hash: String?,
-    )
+    fun updateRefreshTokenHash(userId: String, hash: String?)
 
     fun findRefreshTokenHash(userId: String): String?
+
+    fun searchUsers(query: String, limit: Int = 20, offset: Long = 0): List<User>
+
+    fun updateProfile(id: UUID, displayName: String, bio: String?): Boolean
 }
 
 class UserRepositoryImpl : UserRepository {
@@ -100,6 +101,26 @@ class UserRepositoryImpl : UserRepository {
             Users.select { Users.id eq UUID.fromString(userId) }
                 .singleOrNull()
                 ?.get(Users.refreshTokenHash)
+        }
+
+    override fun searchUsers(query: String, limit: Int, offset: Long): List<User> =
+        transaction {
+            val pattern = "%${query.trim().lowercase()}%"
+            Users.select {
+                Users.username.lowerCase().like(pattern) or Users.displayName.lowerCase().like(pattern)
+            }
+            .orderBy(Users.displayName, SortOrder.ASC)
+            .limit(limit, offset)
+            .map { it.toUser() }
+        }
+
+    override fun updateProfile(id: UUID, displayName: String, bio: String?): Boolean =
+        transaction {
+            Users.update({ Users.id eq id }) {
+                it[this.displayName] = displayName
+                it[this.bio] = bio
+                it[this.updatedAt] = Instant.now()
+            } > 0
         }
 
     private fun ResultRow.toUser() =

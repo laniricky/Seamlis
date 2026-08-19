@@ -4,8 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { useAuth } from "@/components/providers/AuthProvider";
+import { useAuth, User, AuthTokens } from "@/components/providers/AuthProvider";
 import { fetchApi } from "@/lib/api";
+
+interface LoginResponse {
+  tokens: AuthTokens;
+  user: User;
+}
 
 export function LoginForm() {
   const router = useRouter();
@@ -22,15 +27,19 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const data = await fetchApi<any>("/auth/login", {
+      const data = await fetchApi<LoginResponse>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ emailOrUsername, password }),
       });
       login(data.tokens, data.user);
       router.push("/");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Failed to sign in");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -64,7 +73,7 @@ export function LoginForm() {
         placeholder="Enter your password"
       />
 
-      <Button type="submit" variant="primary" className="mt-2" isLoading={loading}>
+      <Button type="submit" variant="primary" className="mt-2" loading={loading}>
         Sign in
       </Button>
     </form>

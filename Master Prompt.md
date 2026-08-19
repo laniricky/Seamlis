@@ -422,7 +422,9 @@ After implementation:
 4. Explain how to test it.
 5. Run or simulate appropriate tests.
 6. Check for bugs and architectural problems.
-7. Only then proceed to the next phase.
+7. Update DEVLOG.md with a detailed summary of your work for the phase.
+8. Commit and push your changes to GitHub.
+9. Only then proceed to the next phase.
 
 Do not silently skip unfinished work.
 

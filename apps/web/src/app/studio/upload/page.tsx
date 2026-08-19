@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { fetchApi } from "@/lib/api";
@@ -11,6 +10,7 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [isShort, setIsShort] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
@@ -42,12 +42,12 @@ export default function UploadPage() {
 
     try {
       // 1. Get pre-signed URL from our backend
-      const res = await fetchApi<any>("/videos/upload-url", {
+      const res = await fetchApi<{ uploadUrl: string }>("/videos/upload-url", {
         method: "POST",
-        body: JSON.stringify({ title, description }),
+        body: JSON.stringify({ title, description, isShort }),
       });
 
-      const { uploadUrl, video } = res;
+      const { uploadUrl } = res;
 
       // 2. Upload directly to MinIO/S3 using the pre-signed URL
       const xhr = new XMLHttpRequest();
@@ -65,6 +65,7 @@ export default function UploadPage() {
           setFile(null);
           setTitle("");
           setDescription("");
+          setIsShort(false);
         } else {
           setStatus("error");
           setErrorMessage(`Upload failed with status: ${xhr.status}`);
@@ -82,16 +83,19 @@ export default function UploadPage() {
       xhr.setRequestHeader("Content-Type", file.type);
       xhr.send(file);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setStatus("error");
-      setErrorMessage(err.message || "Failed to initialize upload");
+      if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage("Failed to initialize upload");
+      }
       setUploading(false);
     }
   };
 
   return (
-    <AppShell>
       <div className="max-w-3xl mx-auto py-8 px-4">
         <h1 className="text-3xl font-display font-bold text-content-primary mb-8">
           Upload Video
@@ -157,6 +161,21 @@ export default function UploadPage() {
                 className="w-full bg-surface-base border border-border rounded-lg px-4 py-2.5 text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all disabled:opacity-50 resize-none"
               />
             </div>
+
+            <div className="flex items-center gap-3 mt-4 p-4 bg-surface-base border border-border rounded-lg">
+              <input 
+                type="checkbox" 
+                id="isShortCheckbox"
+                checked={isShort} 
+                onChange={(e) => setIsShort(e.target.checked)}
+                disabled={uploading}
+                className="w-5 h-5 accent-brand-primary rounded focus:ring-brand-primary cursor-pointer"
+              />
+              <label htmlFor="isShortCheckbox" className="text-sm font-medium text-content-primary cursor-pointer select-none">
+                Upload as a Short
+                <p className="text-xs text-content-secondary mt-0.5 font-normal">Vertical 9:16 videos under 60 seconds.</p>
+              </label>
+            </div>
           </div>
 
           {/* Status Messages */}
@@ -200,6 +219,7 @@ export default function UploadPage() {
                 setFile(null);
                 setTitle("");
                 setDescription("");
+                setIsShort(false);
                 setStatus("idle");
               }}
             >
@@ -209,13 +229,12 @@ export default function UploadPage() {
               type="submit" 
               variant="primary" 
               disabled={!file || !title || uploading}
-              isLoading={uploading}
+              loading={uploading}
             >
               Upload Video
             </Button>
           </div>
         </form>
       </div>
-    </AppShell>
   );
 }

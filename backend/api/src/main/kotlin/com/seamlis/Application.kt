@@ -1,11 +1,30 @@
 package com.seamlis
 
+import com.seamlis.api.routes.searchRoutes
+import com.seamlis.api.routes.studioRoutes
+import com.seamlis.api.routes.engagementRoutes
+import com.seamlis.api.routes.recommendationRoutes
+import com.seamlis.api.routes.notificationRoutes
+import com.seamlis.api.routes.communityRoutes
 import com.seamlis.api.routes.authRoutes
 import com.seamlis.api.routes.processingRoutes
 import com.seamlis.api.routes.videoRoutes
+import com.seamlis.service.AnalyticsService
+import com.seamlis.service.SearchService
+import com.seamlis.service.StudioService
+import com.seamlis.service.RecommendationService
+import com.seamlis.service.NotificationService
+import com.seamlis.service.CommunityService
+import com.seamlis.service.EngagementService
 import com.seamlis.plugins.configureAuth
+import com.seamlis.service.FFmpegService
 import com.seamlis.service.ProcessingService
+import com.seamlis.service.RedisJobQueue
 import com.seamlis.service.getJwtConfig
+import com.seamlis.worker.VideoProcessingWorker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -60,7 +79,39 @@ fun Application.module() {
             bucketName = storageBucket,
         )
     val videoRepository = com.seamlis.data.repository.VideoRepositoryImpl()
-    val processingService = ProcessingService(videoRepository)
+    val analyticsService = AnalyticsService(videoRepository)
+    val engagementRepository = com.seamlis.repository.EngagementRepositoryImpl(videoRepository)
+    val notificationService = NotificationService()
+    val communityService = CommunityService()
+    val engagementService = EngagementService(engagementRepository, notificationService)
+    val searchService = SearchService(videoRepository, userRepository)
+    val studioService = StudioService()
+    val recommendationService = RecommendationService()
+
+    // Redis URL from config
+    val redisUrl = System.getenv("REDIS_URL") ?: "redis://localhost:6379"
+
+    val processingService = ProcessingService(videoRepository, null)
+
+    // Start Redis and background worker asynchronously so they don't block server startup
+    val appScope = CoroutineScope(Dispatchers.IO)
+    appScope.launch {
+        try {
+            val queue = RedisJobQueue(redisUrl)
+            processingService.setQueue(queue)
+
+            val ffmpegService = FFmpegService()
+            val videoProcessingWorker = VideoProcessingWorker(queue, storageService, ffmpegService, processingService)
+
+            environment.monitor.subscribe(ApplicationStopped) {
+                queue.close()
+            }
+
+            videoProcessingWorker.start(this)
+        } catch (e: Exception) {
+            log.error("Failed to initialize Redis/worker: ${e.message}", e)
+        }
+    }
 
     // 4. Configure Routing
     routing {
@@ -68,11 +119,17 @@ fun Application.module() {
             call.respondText("Seamlis API is running!")
         }
         get("/api/v1/health") {
-            call.respondText("{\"status\":\"UP\"}")
+            call.respond(io.ktor.http.HttpStatusCode.OK, mapOf("status" to "UP"))
         }
 
         authRoutes(authService)
-        videoRoutes(videoRepository, storageService)
+        videoRoutes(videoRepository, storageService, analyticsService)
         processingRoutes(processingService)
+        engagementRoutes(engagementService)
+        searchRoutes(searchService)
+        studioRoutes(studioService, videoRepository)
+        recommendationRoutes(recommendationService)
+        notificationRoutes(notificationService)
+        communityRoutes(communityService)
     }
 }

@@ -25,6 +25,7 @@ repositories {
 
 dependencies {
     implementation("io.ktor:ktor-server-core-jvm:2.3.8")
+    implementation("io.ktor:ktor-server-config-yaml:2.3.8")
     implementation("io.ktor:ktor-server-netty-jvm:2.3.8")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.8")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.8")
@@ -55,6 +56,10 @@ dependencies {
 
     // Exposed extras
     implementation("org.jetbrains.exposed:exposed-java-time:0.47.0")
+
+    // Queue / Async
+    implementation("io.lettuce:lettuce-core:6.3.1.RELEASE")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 }
 
 ktlint {

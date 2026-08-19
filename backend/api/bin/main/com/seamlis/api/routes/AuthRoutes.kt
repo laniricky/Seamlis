@@ -10,6 +10,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 @Serializable
 data class RegisterRequest(
@@ -82,7 +83,7 @@ fun Route.authRoutes(authService: AuthService) {
         }
 
         // Protected routes
-        authenticate("jwt-auth") {
+        authenticate {
             // GET /api/v1/auth/me
             get("/me") {
                 val principal = call.principal<JWTPrincipal>()
@@ -92,6 +93,28 @@ fun Route.authRoutes(authService: AuthService) {
                     call.respond(HttpStatusCode.OK, user)
                 }.onFailure {
                     call.respond(HttpStatusCode.NotFound, ApiError("User not found"))
+                }
+            }
+            
+            // PATCH /api/v1/auth/me
+            patch("/me") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.subject ?: return@patch call.respond(HttpStatusCode.Unauthorized)
+                
+                @Serializable
+                data class UpdateProfileRequest(val displayName: String, val bio: String?)
+                
+                val req = call.receive<UpdateProfileRequest>()
+                
+                runCatching {
+                    val success = authService.updateProfile(UUID.fromString(userId), req.displayName, req.bio)
+                    if (success) {
+                        call.respond(HttpStatusCode.OK, mapOf("success" to true))
+                    } else {
+                        call.respond(HttpStatusCode.InternalServerError, ApiError("Failed to update profile"))
+                    }
+                }.onFailure { e ->
+                    call.respond(HttpStatusCode.InternalServerError, ApiError("Internal server error: ${e.message}"))
                 }
             }
 

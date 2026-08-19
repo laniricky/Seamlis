@@ -185,10 +185,93 @@ Proceed to **Phase 4: Video Upload Architecture & Infrastructure** — configure
 - Added a new `Upload` link to the main `Header` UI leading to the studio.
 
 **Git:**
-- Commit: Pending push
-- Status: Compilation complete, formatting with ktlint.
+- Commit: `cb8d485` — `feat: Phase 4+5 - Video Upload & Processing Pipeline` (31 files, +1456 lines)
+- Status: ✅ Pushed to `main`
 
 **Next Steps:**
 Proceed to **Phase 5: Video Processing Pipeline** — integrating FFmpeg to generate thumbnails, compress videos, and update database statuses via webhooks/polling.
 
 ---
+
+## 2026-08-18T14:49:00+03:00 — Phase 5 Complete: Video Processing Pipeline
+
+**Action:** Implemented the asynchronous video processing pipeline to transcode uploaded videos into HLS formats and generate thumbnails using FFmpeg.
+
+**Backend (Ktor):**
+- Added `io.lettuce:lettuce-core` and `kotlinx-coroutines-core` dependencies to `build.gradle.kts`.
+- Created `RedisJobQueue.kt` for reliable Redis-backed job queueing (`LPUSH`/`BRPOP`).
+- Created `FFmpegService.kt` to wrap `ffmpeg` and `ffprobe` execution, extracting metadata, generating thumbnails, and transcoding to HLS.
+- Created `VideoProcessingWorker.kt` background coroutine to pull jobs, download raw videos, process them, and upload HLS streams and thumbnails back to S3.
+- Updated `ProcessingService.kt` to enqueue jobs to Redis.
+- Added `downloadFile` and `uploadFile` methods to `StorageService.kt`.
+- Updated `Application.kt` to initialize the Redis queue, FFmpeg service, and launch the background worker coroutine.
+
+**Git:**
+- Commit: Pending (To be committed by user)
+- Status: ✅ Ready for testing
+
+**Next Steps:**
+Proceed to **Phase 6: Video Player** — build the high-quality HLS player for the web and mobile platforms with support for multiple resolutions and thumbnail previews.
+
+---
+
+## 2026-08-18T16:29:00+03:00 — System Stabilization & Bug Fixes
+
+**Action:** Resolved multiple issues preventing the Ktor backend from starting up correctly after Phase 5.
+
+**Issues Resolved:**
+- Fixed `RedisConnectionException` by isolating Redis `BRPOP` operations to a dedicated connection and configuring the `io.lettuce` client with proper auto-reconnect semantics.
+- Fixed Ktor startup block by migrating the `VideoProcessingWorker` initialization to an asynchronous `appScope.launch` coroutine.
+- Fixed `IllegalArgumentException` in authentication routes by removing the named `"jwt-auth"` provider and defaulting to a global JWT provider across all protected routes.
+- Resolved `java.net.BindException` (Address already in use on port `8080`) by migrating the Ktor backend port to `8081` and updating the Next.js `API_BASE_URL` to match.
+
+**Git:**
+- Status: ✅ Stable and running on `localhost:8081` (Backend) and `localhost:3000` (Frontend)
+
+**Next Steps:**
+Awaiting user approval on the implementation plan for **Phase 6: Video Player Implementation**.
+
+---
+
+## 2026-08-18T16:42:00+03:00 — Phase 6 Begins: Video Player Implementation
+
+**Action:** Building the HLS video player and wiring the watch page to real backend data.
+
+**Approved approach:** Custom `hls.js` player with a hand-crafted React UI (no heavy wrappers like `video.js`).
+
+**Changes:**
+- Installed `hls.js`, `@radix-ui/react-slider`, `@radix-ui/react-dropdown-menu` frontend packages.
+- Set MinIO `seamlis-videos` bucket public-read policy via Docker `mc` command and `StorageService.kt` init code.
+- Created `VideoPlayer.tsx` — wraps `hls.js`, manages HLS lifecycle, quality levels, buffering state, auto-hide controls.
+- Created `VideoControls.tsx` — custom progress bar, volume slider, settings (quality) menu, fullscreen toggle, time display.
+- Extended `VideoRepository` with `listVideos()` and `updateProcessedInfo()` methods.
+- Added `GET /api/v1/videos` (list all READY) and `GET /api/v1/videos/{id}` (single) public endpoints to `VideoRoutes.kt`.
+- Created `apps/web/src/app/watch/[id]/page.tsx` — dynamic watch page fetching real video data, rendering `VideoPlayer` with the HLS `master.m3u8` URL, showing related videos sidebar.
+- Updated `apps/web/src/app/page.tsx` — home feed now fetches live uploaded videos from API and renders them alongside static demo content.
+- Updated `VideoCard.tsx` — added `href` override prop and optional thumbnail fallback UI.
+- Added `localhost:9000` (MinIO dev) to `next.config.mjs` image remote patterns.
+- Backend restarted on port `8081`.
+
+**Next Steps:**
+Verify backend compiles, health check passes, and watch page renders correctly.
+
+---
+
+## 2026-08-18T17:00:00+03:00 — Phase 7: Home Feed (Infinite Scroll)
+
+**Action:** Upgrading the Home page to feature infinite scrolling and enriching the API.
+
+**Approved approach:**
+- Enrich `Video` API responses to include `ChannelPreview` (uploader's channel data) using SQL joins to eliminate N+1 queries.
+- Use `react-intersection-observer` for infinite scrolling on the frontend.
+
+**Changes:**
+- Added `ChannelPreview` and `VideoResponse` models to `Video.kt`.
+- Updated `VideoRepository.kt` with `getFeedVideos()` and `getVideoDetails()` methods using `Videos.innerJoin(Users)`.
+- Updated `VideoRoutes.kt` `GET /api/v1/videos` to accept `limit` and `offset` for pagination, returning `List<VideoResponse>`.
+- Installed `react-intersection-observer` and updated `apps/web/src/app/page.tsx` with robust infinite scrolling state (`videos`, `hasMore`, `offset`).
+- Updated `apps/web/src/app/watch/[id]/page.tsx` to handle the enriched `VideoResponse` (replaced placeholder "Creator" with real `video.uploader.displayName`).
+- Restarted Ktor backend and confirmed health check passes.
+
+**Next Steps:**
+Phase 7 is complete! Proceed to Phase 8 (Video Page metrics/logic) or Phase 9 (Engagement System).

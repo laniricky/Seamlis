@@ -16,6 +16,13 @@ object Videos : UUIDTable("videos") {
     val processedVideoKey = varchar("processed_video_key", 512).nullable()
     val thumbnailUrl = varchar("thumbnail_url", 512).nullable()
 
+    val isShort = bool("is_short").default(false)
+
+    val viewCount = long("view_count").default(0L)
+    val likeCount = integer("like_count").default(0)
+    val dislikeCount = integer("dislike_count").default(0)
+    val commentCount = integer("comment_count").default(0)
+
     // Foreign Keys
     val uploaderId = reference("uploader_id", Users, onDelete = ReferenceOption.CASCADE)
 

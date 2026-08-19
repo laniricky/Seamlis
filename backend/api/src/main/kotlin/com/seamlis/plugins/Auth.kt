@@ -9,7 +9,7 @@ import io.ktor.server.auth.jwt.*
 
 fun Application.configureAuth(jwtConfig: JwtConfig) {
     install(Authentication) {
-        jwt("jwt-auth") {
+        jwt {
             realm = "Seamlis API"
             verifier(
                 JWT.require(Algorithm.HMAC256(jwtConfig.secret))

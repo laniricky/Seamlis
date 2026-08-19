@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 export interface VideoCardProps {
   id: string;
   title: string;
-  thumbnailUrl: string;
+  thumbnailUrl?: string | null;
   duration: string;        // e.g. "12:34"
   channelName: string;
   channelAvatarUrl?: string | null;
@@ -17,6 +17,7 @@ export interface VideoCardProps {
   isLive?: boolean;
   className?: string;
   compact?: boolean;       // Compact row variant (search results, sidebar)
+  href?: string;           // Override default watch href
 }
 
 function formatViews(n: number): string {
@@ -54,17 +55,23 @@ export function VideoCard({
   isLive = false,
   className,
   compact = false,
+  href,
 }: VideoCardProps) {
+  const watchHref = href ?? `/watch/${id}`;
   if (compact) {
     return (
       <Link
-        href={`/watch/${id}`}
+        href={watchHref}
         className={cn("flex gap-3 group hover:bg-surface-elevated rounded-lg p-2 transition-colors", className)}
         id={`video-card-compact-${id}`}
       >
         {/* Thumbnail */}
         <div className="relative shrink-0 w-40 aspect-video rounded-md overflow-hidden bg-surface-elevated">
-          <Image src={thumbnailUrl} alt={title} fill className="object-cover" sizes="160px" />
+          {thumbnailUrl ? (
+            <Image src={thumbnailUrl} alt={title} fill className="object-cover" sizes="160px" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-content-tertiary">▶</div>
+          )}
           <span className="absolute bottom-1 right-1 duration-badge">
             {isLive ? "LIVE" : duration}
           </span>
@@ -91,14 +98,18 @@ export function VideoCard({
       id={`video-card-${id}`}
     >
       {/* Thumbnail */}
-      <Link href={`/watch/${id}`} className="block relative aspect-video rounded-lg overflow-hidden bg-surface-elevated">
-        <Image
-          src={thumbnailUrl}
-          alt={title}
-          fill
-          className="object-cover transition-transform duration-slow group-hover:scale-105"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+      <Link href={watchHref} className="block relative aspect-video rounded-lg overflow-hidden bg-surface-elevated">
+        {thumbnailUrl ? (
+          <Image
+            src={thumbnailUrl}
+            alt={title}
+            fill
+            className="object-cover transition-transform duration-slow group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-content-tertiary text-3xl">▶</div>
+        )}
         {/* Duration / Live badge */}
         <span
           className={cn(
@@ -121,7 +132,7 @@ export function VideoCard({
           />
         </Link>
         <div className="flex-1 min-w-0">
-          <Link href={`/watch/${id}`}>
+          <Link href={watchHref}>
             <h3 className="text-sm font-medium text-content-primary line-clamp-2 leading-snug hover:text-brand-text transition-colors">
               {title}
             </h3>

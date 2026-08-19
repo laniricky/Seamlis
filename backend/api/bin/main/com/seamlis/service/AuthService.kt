@@ -99,6 +99,10 @@ class AuthService(
     // ── Me ────────────────────────────────────────────────────────────────
     fun getUser(userId: String): User = userRepo.findById(userId) ?: throw AuthException("User not found")
 
+    fun updateProfile(userId: java.util.UUID, displayName: String, bio: String?): Boolean {
+        return userRepo.updateProfile(userId, displayName, bio)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
     private fun issueTokens(user: User): AuthTokens {
         val now = System.currentTimeMillis()

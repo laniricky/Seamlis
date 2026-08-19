@@ -5,12 +5,11 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   Compass,
-  Zap,
-  History,
-  BookmarkCheck,
-  ListVideo,
-  ThumbsUp,
+  Flame,
+  PlaySquare,
   Tv2,
+  BookmarkCheck,
+  ThumbsUp,
   Award,
   LayoutDashboard,
   ChevronRight,
@@ -30,21 +29,20 @@ interface NavItem {
 }
 
 const mainNav: NavItem[] = [
-  { href: "/",          label: "Home",        icon: Home,          id: "nav-home"     },
-  { href: "/explore",   label: "Explore",     icon: Compass,       id: "nav-explore"  },
-  { href: "/shorts",    label: "Shorts",      icon: Zap,           id: "nav-shorts"   },
-  { href: "/live",      label: "Live",        icon: Tv2,           id: "nav-live"     },
+  { href: "/", label: "Home", icon: Home, id: "nav-home" },
+  { href: "/shorts", label: "Shorts", icon: Flame, id: "nav-shorts" },
+  { href: "/explore", label: "Explore", icon: Compass, id: "nav-explore" },
+  { href: "/subscriptions", label: "Subscriptions", icon: PlaySquare, id: "nav-subs" },
+  { href: "/live", label: "Live", icon: Tv2, id: "nav-live" },
 ];
 
 const libraryNav: NavItem[] = [
-  { href: "/history",   label: "History",     icon: History,       id: "nav-history"  },
-  { href: "/playlists", label: "Playlists",   icon: ListVideo,     id: "nav-playlists"},
   { href: "/liked",     label: "Liked videos",icon: ThumbsUp,      id: "nav-liked"    },
   { href: "/saved",     label: "Saved",       icon: BookmarkCheck, id: "nav-saved"    },
 ];
 
 const creatorNav: NavItem[] = [
-  { href: "/studio",        label: "Creator Studio", icon: LayoutDashboard, id: "nav-studio"   },
+  { href: "/studio/dashboard", label: "Creator Studio", icon: LayoutDashboard, id: "nav-studio"   },
   { href: "/leaderboard",   label: "Leaderboard",    icon: Award,           id: "nav-leaderboard"},
 ];
 

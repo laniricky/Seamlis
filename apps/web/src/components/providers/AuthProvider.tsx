@@ -14,7 +14,7 @@ export interface User {
   createdAt: string;
 }
 
-interface AuthTokens {
+export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
@@ -25,6 +25,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (tokens: AuthTokens, user: User) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -61,8 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await fetchApi("/auth/logout", { method: "POST" });
-    } catch (e) {
-      // ignore
+    } catch {
+      // Token is invalid or expired
+      localStorage.removeItem('seamlis-token');
+      localStorage.removeItem("seamlis-refresh");
+      setUser(null);
     } finally {
       localStorage.removeItem("seamlis-token");
       localStorage.removeItem("seamlis-refresh");
@@ -70,8 +74,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const fetchedUser = await fetchApi<User>("/auth/me");
+      setUser(fetchedUser);
+    } catch (e) {
+      console.error("Failed to refresh user", e);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -30,8 +30,41 @@ data class Video(
     val originalVideoKey: String?,
     val processedVideoKey: String?,
     val thumbnailUrl: String?,
+    val isShort: Boolean = false,
+    val viewCount: Long = 0,
+    val likeCount: Int = 0,
+    val dislikeCount: Int = 0,
+    val commentCount: Int = 0,
     @Serializable(with = UUIDSerializer::class)
     val uploaderId: UUID,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+@Serializable
+data class ChannelPreview(
+    val id: String,
+    val username: String,
+    val displayName: String,
+    val avatarUrl: String?,
+)
+
+@Serializable
+data class VideoResponse(
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
+    val title: String,
+    val description: String?,
+    val status: String,
+    val originalVideoKey: String?,
+    val processedVideoKey: String?,
+    val thumbnailUrl: String?,
+    val isShort: Boolean = false,
+    val viewCount: Long = 0,
+    val likeCount: Int = 0,
+    val dislikeCount: Int = 0,
+    val commentCount: Int = 0,
+    val uploader: ChannelPreview,
     val createdAt: String,
     val updatedAt: String,
 )
@@ -41,6 +74,7 @@ data class Video(
 data class CreateVideoRequest(
     val title: String,
     val description: String? = null,
+    val isShort: Boolean = false,
 )
 
 @Serializable
@@ -48,4 +82,11 @@ data class VideoUploadResponse(
     val video: Video,
     // Pre-signed URL for client to upload directly to S3
     val uploadUrl: String,
+)
+
+@Serializable
+data class AnalyticsRequest(
+    val eventName: String,
+    val sessionId: String?,
+    val properties: String? = null
 )
