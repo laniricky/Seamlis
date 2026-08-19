@@ -275,3 +275,44 @@ Verify backend compiles, health check passes, and watch page renders correctly.
 
 **Next Steps:**
 Phase 7 is complete! Proceed to Phase 8 (Video Page metrics/logic) or Phase 9 (Engagement System).
+
+---
+
+## 2026-08-19T10:45:00+03:00 — Phase 14 Complete: Notifications
+
+**Action:** Built the core notification system to alert users of engagements (comments, subscriptions).
+
+**Backend (Ktor):**
+- Migrated database schemas: `notifications` and `notification_preferences`.
+- Created `NotificationService.kt` to handle unread counts, reading, dispatching, and preferences.
+- Intercepted events in `EngagementService.kt` (new comment, new subscription) to trigger notifications automatically.
+- Created `NotificationRoutes.kt` with REST endpoints.
+
+**Frontend (Next.js):**
+- Created `NotificationBell.tsx` component with a live unread badge and dropdown popup.
+- Integrated `NotificationBell.tsx` into `Header.tsx`.
+- Built the `/settings/notifications/page.tsx` for granular email/push/in-app preference toggles.
+- Fixed ESLint typing issues across auth pages and search page during verification.
+
+**Next Steps:**
+Proceed to **Phase 15: Communities** — a dedicated feed for text, images, and polls per channel.
+
+---
+
+## 2026-08-19T12:06:00+03:00 — Phase 15 Complete: Communities
+
+**Action:** Built the community tab allowing creators to post text, images, announcements, and interactive polls.
+
+**Backend (Ktor):**
+- Added migration `V9__create_community_posts_table.sql`.
+- Created Exposed schemas for `community_posts`, `community_post_options`, `community_post_votes`, and `community_post_likes`.
+- Created `CommunityService.kt` for CRUD, poll voting logic (preventing double votes), and toggling likes.
+- Created `CommunityRoutes.kt` with endpoints for public feeds and authenticated composer/vote actions.
+
+**Frontend (Next.js):**
+- Built `CommunityPost.tsx` to dynamically render 5 post types (TEXT, IMAGE, POLL, QUESTION, ANNOUNCEMENT) with interactive percentage bars for polls.
+- Updated `/@username/page.tsx` with a Tabbed layout (Videos, Shorts, Community, Playlists, About).
+- Built a robust studio composer in `/studio/community/page.tsx` supporting text, images, and a dynamic poll option builder.
+
+**Next Steps:**
+Proceed to **Phase 16: Livestreaming** — architectural design for RTMP ingest and chat.
