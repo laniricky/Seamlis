@@ -342,3 +342,24 @@ Proceed to **Phase 16: Livestreaming** — architectural design for RTMP ingest 
 
 **Next Steps:**
 Proceed to **Phase 17: Video Editor & Shorts Engine** — implement in-browser trimming and clipping tools for converting long-form VODs into Shorts.
+
+---
+
+## 2026-08-19T14:19:00+03:00 — Phase 17 Complete: Monetization
+
+**Action:** Built the core monetization engine enabling creators to earn revenue through channel memberships and one-time tips, powered by Stripe.
+
+**Backend (Ktor):**
+- Created migration `V11__create_monetization_tables.sql` for `memberships`, `user_memberships`, and `transactions` (the immutable financial ledger).
+- Integrated `stripe-java` SDK.
+- Built `MonetizationService.kt` to handle Stripe `PaymentIntent` creation and signature-verified webhook processing (`payment_intent.succeeded`).
+- Exposed `MonetizationRoutes.kt` for tier creation, ledger viewing, and payment initiation.
+
+**Frontend (Next.js):**
+- Built the Creator Studio `/studio/monetization` dashboard to create membership tiers, view total earnings, and see a ledger of all incoming transactions.
+- Created `MembershipCard.tsx` and dynamically embedded it within a new `Memberships` tab on the public channel page.
+- Created an interactive `TipButton.tsx` (Super Thanks) and embedded it on the video watch page, allowing users to send pre-set tip amounts.
+- Fixed multiple TypeScript `any` types to pass strict Next.js builds.
+
+**Next Steps:**
+Proceed to **Phase 18: Moderation & Trust/Safety** — build the reporting workflow, review queue, and moderation dashboard.

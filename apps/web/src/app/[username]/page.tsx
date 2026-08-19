@@ -10,6 +10,7 @@ import { Loader2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CommunityPost, CommunityPostData } from '@/components/community/CommunityPost';
+import { MembershipCard } from '@/components/monetization/MembershipCard';
 
 interface ChannelProfile {
   id: string;
@@ -23,7 +24,16 @@ interface ChannelProfile {
   isSubscribed: boolean;
 }
 
-const TABS = ['Videos', 'Shorts', 'Community', 'Playlists', 'About'] as const;
+interface MembershipTier {
+  id: string;
+  name: string;
+  description?: string;
+  priceCents: number;
+  currency: string;
+  perks: string[];
+}
+
+const TABS = ['Videos', 'Shorts', 'Community', 'Playlists', 'Memberships', 'About'] as const;
 type Tab = typeof TABS[number];
 
 export default function ChannelPage() {
@@ -159,6 +169,10 @@ export default function ChannelPage() {
               <p className="text-content-secondary whitespace-pre-line">{channel.bio || 'No description provided.'}</p>
             </div>
           </div>
+        ) : activeTab === 'Memberships' ? (
+          <div className="pb-12">
+            <MembershipsTabContent channelId={channel.id} />
+          </div>
         ) : (
           <div className="pb-12">
             <div className="flex items-center justify-center py-20">
@@ -218,6 +232,42 @@ function CommunityTabContent({ channelId }: { channelId: string }) {
             setPosts(posts.map(p => p.id === updated.id ? updated : p))
           }
         />
+      ))}
+    </div>
+  );
+}
+
+function MembershipsTabContent({ channelId }: { channelId: string }) {
+  const [tiers, setTiers] = useState<MembershipTier[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApi(`/channels/${channelId}/memberships`)
+      .then((res: unknown) => setTiers(res as MembershipTier[]))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [channelId]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-brand-primary" />
+      </div>
+    );
+  }
+
+  if (tiers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-content-secondary">
+        <p>This channel does not offer any memberships yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      {tiers.map((tier, idx) => (
+        <MembershipCard key={tier.id} tier={tier} index={idx} />
       ))}
     </div>
   );

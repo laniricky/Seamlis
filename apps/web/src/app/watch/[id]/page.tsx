@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import VideoPlayer from '@/components/VideoPlayer';
 import CommentsSection from '@/components/CommentsSection';
+import { TipButton } from '@/components/monetization/TipButton';
 import { fetchApi } from '@/lib/api';
 import {
   ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal,
@@ -247,6 +248,7 @@ export default function WatchPage() {
 
               {/* Action buttons */}
               <div className="flex items-center gap-2 flex-wrap">
+                <TipButton payeeId={video.uploader.id} creatorName={video.uploader.displayName} />
                 {/* Like / Dislike pill */}
                 <div className="flex items-center bg-surface-card border border-border rounded-full overflow-hidden">
                   <button

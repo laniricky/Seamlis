@@ -62,6 +62,9 @@ dependencies {
     implementation("io.lettuce:lettuce-core:6.3.1.RELEASE")
     implementation("redis.clients:jedis:5.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+
+    // Payments
+    implementation("com.stripe:stripe-java:24.3.0")
 }
 
 ktlint {
